@@ -1,41 +1,42 @@
-version: "3.8"
+version: '3.8'
 
 services:
-  db:
-    image: postgres
-    container_name: "exam_app-db"
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-    ports:
-      - "7681:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
-    healthcheck:
-      test: [ "CMD-SHELL", "echo","Hello" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
   web:
     container_name: "exam_app"
-    build: .
-    command: bash -c "python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:80"
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    command: gunicorn MainRoot.wsgi:application --bind 0.0.0.0:8000
     volumes:
-      - .:/MainRoot
-    ports:
-      - "8081:80"
+      - ./app/:/usr/src/app/
+    expose:
+      - 8000
+    env_file:
+      - ./.env
     depends_on:
-      db:
-        condition: service_healthy
-    links:
-      - db:db
+      - db
+
+  db:
+    container_name: "app_db"
+    image: postgres:13.0-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_HOST=db
-      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${SQL_USER}
+      - POSTGRES_PASSWORD=${SQL_PASSWORD}
+      - POSTGRES_DB=${SQL_DATABASE}
+    ports:
+      - "7600:5432"
+  nginx:
+    container_name: "nginx_app"
+    build: ./nginx
+    volumes:
+      - static_volume:/home/app/web/staticfiles
+    ports:
+      - "1337:80"
+    depends_on:
+      - web
 
 volumes:
   postgres_data:
+  static_volume:

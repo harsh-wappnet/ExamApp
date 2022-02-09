@@ -1,0 +1,12 @@
+#  nginx:
+#    container_name: "xpt-nginx"
+#    build: ./nginx
+#    ports:
+#      - "1234:80"
+#    depends_on:
+#      - xpt_app
+#    restart: "on-failure"
+#    volumes:
+#      - .:/app
+
+#gunicorn xpt_generate.wsgi:application --bind 0.0.0.0:8080 --timeout 800
